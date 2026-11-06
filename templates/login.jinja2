@@ -1,0 +1,25 @@
+{% extends "./layout.jinja2" %}
+
+{% block title %}Вход{% endblock %}
+
+{% block content %}
+<section class="auth-panel">
+<h2>Войти</h2>
+
+{% if error %}
+<p class="error" role="alert">{{ error }}</p>
+{% endif %}
+
+<form class="auth-form" action="/login" method="post">
+    <label for="login">Логин</label>
+    <input id="login" type="text" name="login" required>
+
+    <label for="password">Пароль</label>
+    <input id="password" type="password" name="password" required>
+
+    <button class="button" type="submit">Войти</button>
+</form>
+
+<a href="/register" class="link">Еще не зарегистрированы? Регистрация</a>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "./layout.jinja2" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block header %}
+<span>{{ login }}</span>
+<form action="/logout" method="get">
+    <button class="button" type="submit">Выйти</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<a class="link" href="/profile/new">Создать новую заявку</a>
+<article>
+    <table>
+        <thead>
+            <tr>
+                <th>Курс</th>
+                <th>Тип оплаты</th>
+                <th>Дата старта</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.course }}</td>
+                <td>{{ record.payment }}</td>
+                <td>{{ record.date }}</td>
+                <td>
+                    {{ record.status }}
+                    {% if record.status == "Обучение завершено" %}
+                    <form action="/profile/feedback" method="post">
+                        <input type="hidden" name="record_id" value="{{ record.id }}">
+                        <label for="feedback-{{ record.id }}">Ваш отзыв</label>
+                        <textarea id="feedback-{{ record.id }}" name="new_feedback" required
+                            maxlength="2000"></textarea>
+                        <button class="button" type="submit">Отправить отзыв</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% for feedback in feedbacks if feedback.record_id == record.id %}
+            <tr>
+                <td colspan="4"><strong>Отзыв {{ feedback.user_login }}</strong> {{ feedback.text }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endblock %}

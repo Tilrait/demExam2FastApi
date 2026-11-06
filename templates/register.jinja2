@@ -1,0 +1,38 @@
+{% extends "./layout.jinja2" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<section class="auth-panel">
+    <h2>Создать аккаунт</h2>
+
+    {% if error %}
+    <p class="error" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <form class="auth-form" action="/register" method="post" autocomplete="on">
+        <label for="login">Логин</label>
+        <input id="login" type="text" name="login" placeholder="Логин" pattern="[A-Za-z0-9]{6,}" required>
+        <small>Латиница и цифры, не менее 6 символов.</small>
+
+        <label for="password">Пароль</label>
+        <input id="password" type="password" name="password" placeholder="Не менее 8 символов" pattern="\S{8,}"
+            required>
+        <small>Не менее 8 символов, без пробелов.</small>
+
+        <label for="fio">ФИО</label>
+        <input id="fio" type="text" name="fio" placeholder="Иванов Иван Иванович" pattern="[А-Яа-яЁё ]+" required>
+
+        <label for="phone">Номер телефона</label>
+        <input id="phone" type="tel" name="phone" placeholder="8(999)123-45-67"
+            pattern="8\([0-9]{3}\)[0-9]{3}-[0-9]{2}-[0-9]{2}" required>
+
+        <label for="email">Электронная почта</label>
+        <input id="email" type="email" name="email" placeholder="name@example.com" required>
+
+        <button class="button" type="submit">Зарегистрироваться</button>
+    </form>
+
+    <a href="/login" class="link">Уже зарегистрированы? Войти</a>
+</section>
+{% endblock %}

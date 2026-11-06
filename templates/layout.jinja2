@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %} {% endblock %}</title>
+    <link rel="stylesheet" href="/static/vendor/pico.css">
+    <link rel="stylesheet" href="/static/vendor/glide.core.css">
+    <link rel="stylesheet" href="/static/global.css?v=3">
+</head>
+
+<body>
+    <div class="page">
+        <header class="header">
+            <h1 class="brand">KorokNET</h1>
+            <img class="logo" src="/static/images/logo/logo_1.webp" />
+            {% block header %}{% endblock %}
+        </header>
+        <div class="glide">
+            <div data-glide-el="track" class="glide__track">
+                <ul class="glide__slides">
+                    <li class="glide__slide"><img src="/static/images/slider/image_1.webp" alt="Слайд1"></li>
+                    <li class="glide__slide"><img src="/static/images/slider/image_2.webp" alt="Слайд2"></li>
+                    <li class="glide__slide"><img src="/static/images/slider/image_3.webp" alt="Слайд3"></li>
+                    <li class="glide__slide"><img src="/static/images/slider/image_4.webp" alt="Слайд4"></li>
+                    <li class="glide__slide"><img src="/static/images/slider/image_5.webp" alt="Слайд5"></li>
+                </ul>
+            </div>
+            <div class="glide__arrows" data-glide-el="controls">
+                <button class="glide__arrow glide__arrow--prev" data-glide-dir="<"
+                    aria-label="Предыдущий слайд">&lt;</button>
+                <button class="glide__arrow glide__arrow--next" data-glide-dir=">"
+                    aria-label="Следующий слайд">&gt;</button>
+            </div>
+        </div>
+        <main>
+            {% if error %}<p class="error">{{ error }}</p>{% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script src="/static/vendor/glide.js"></script>
+    <script>
+        new Glide('.glide', { autoplay: 3000, perView: 2, breakpoints: { 600: { perView: 1 } } }).mount()
+    </script>
+</body>
+
+</html>
