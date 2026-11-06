@@ -1,4 +1,0 @@
-fastapi[standard]
-sqlmodel
-jinja2
-python-multipart
