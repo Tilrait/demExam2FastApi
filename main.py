@@ -1,6 +1,7 @@
 from typing import Annotated
 from contextlib import asynccontextmanager
 import re
+from math import ceil
 
 from fastapi import FastAPI, Request, Form
 from fastapi.staticfiles import StaticFiles
@@ -68,6 +69,12 @@ class NewStatus(SQLModel):
     new_status: str
 
 
+RECORD_STATUSES = {"Новая", "Идет обучение", "Обучение завершено"}
+ADMIN_LOGIN = "Admin"
+ADMIN_PASSWORD = "KorokNET"
+ADMIN_PAGE_SIZE = 10
+
+
 class NewFeedback(SQLModel):
     record_id: int
     new_feedback: str
@@ -124,11 +131,19 @@ def get_login(request: Request):
 
 @app.post("/login")
 def post_login(request: Request, login: Annotated[Login, Form()]):
+    # The demo-exam specification provides a dedicated administrator account.
+    entered_login = login.login.strip()
+    if entered_login.casefold() == ADMIN_LOGIN.casefold() and login.password == ADMIN_PASSWORD:
+        response = RedirectResponse("/admin", status_code=302)
+        response.set_cookie("login", ADMIN_LOGIN, httponly=True, samesite="lax")
+        response.set_cookie("role", "moderator", httponly=True, samesite="lax")
+        return response
+
     with Session(bind=engine) as session:
         try:
             expr = (
                 select(User)
-                .where(User.login == login.login)
+                .where(User.login == entered_login)
                 .where(User.password == login.password)
             )
             user = session.exec(expr).one()
@@ -141,8 +156,8 @@ def post_login(request: Request, login: Annotated[Login, Form()]):
         "/admin" if user.role == "moderator" else "/profile", status_code=302
     )
 
-    response.set_cookie("login", user.login)
-    response.set_cookie("role", user.role)
+    response.set_cookie("login", user.login, httponly=True, samesite="lax")
+    response.set_cookie("role", user.role or "user", httponly=True, samesite="lax")
 
     return response
 
@@ -289,6 +304,14 @@ def post_feedback(request: Request, feedback: Annotated[NewFeedback, Form()]):
 
 @app.post("/status")
 def post_status(request: Request, new_status: Annotated[NewStatus, Form()]):
+    # The status form is shown in the moderator panel, so only moderators may
+    # submit it. Keep the accepted values aligned with the options in
+    # templates/admin.jinja2.
+    if request.cookies.get("role") != "moderator":
+        return RedirectResponse("/login", status_code=302)
+    if new_status.new_status not in RECORD_STATUSES:
+        return RedirectResponse("/admin?message=Некорректный+статус", status_code=302)
+
     with Session(bind=engine) as session:
         try:
             record = session.exec(
@@ -297,24 +320,53 @@ def post_status(request: Request, new_status: Annotated[NewStatus, Form()]):
             record.status = new_status.new_status
             session.commit()
             session.refresh(record)
-            return RedirectResponse("/admin", status_code=302)
+            return RedirectResponse("/admin?message=Статус+заявки+обновлен", status_code=302)
         except NoResultFound:
-            return RedirectResponse("/admin", status_code=302)
+            return RedirectResponse("/admin?message=Заявка+не+найдена", status_code=302)
 
 
 @app.get("/admin")
-def get_admin(request: Request):
+def get_admin(
+    request: Request,
+    status: str = "",
+    search: str = "",
+    page: int = 1,
+):
     if request.cookies.get("role") != "moderator":
         return RedirectResponse("/login", status_code=302)
 
     with Session(bind=engine) as session:
         expr = select(Record)
-        records = session.exec(expr).all()
+        if status in RECORD_STATUSES:
+            expr = expr.where(Record.status == status)
+        if search.strip():
+            term = f"%{search.strip()}%"
+            expr = expr.where(
+                (Record.user_login.ilike(term)) | (Record.course.ilike(term))
+            )
+        total = len(session.exec(expr).all())
+        page_count = max(1, ceil(total / ADMIN_PAGE_SIZE))
+        page = min(max(page, 1), page_count)
+        records = session.exec(
+            expr.order_by(Record.id.desc())
+            .offset((page - 1) * ADMIN_PAGE_SIZE)
+            .limit(ADMIN_PAGE_SIZE)
+        ).all()
 
     return templates.TemplateResponse(
         request,
         "admin.jinja2",
-        context={"login": request.cookies.get("login"), "records": records},
+        context={
+            "login": request.cookies.get("login"),
+            "records": records,
+            "status_filter": status,
+            "search": search,
+            "page": page,
+            "page_count": page_count,
+            "total": total,
+            "message": request.query_params.get("message"),
+            "statuses": sorted(RECORD_STATUSES),
+        },
     )
 
 
